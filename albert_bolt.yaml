@@ -1,0 +1,26 @@
+# config file for training the DNN model on Turi Bolt
+# note: fill in your own simcloud authentication token
+name: 'AMP Reco Engineering - Train Albert'
+description: 'Job for training a DNN model for Arcade'
+command: 'python3 -m bolt_train'
+tags: ['AMP', 'Recommendations', 'BERT', 'Dev']
+setup_command: 'bash setup_bolt.sh'
+permissions:
+   owners: 'niketan_pansare'
+   viewers: 'amp-reco-eng'
+resources:
+  image: current-ubuntu18.04-cuda10.1
+  cluster: 'simcloud-mr2.apple.com'
+  group: 'p6:iss'
+  ports: ["TENSORBOARD_PORT"]
+  num_gpus: 4
+  num_cpus: 2
+  memory_gb: 95
+  disk_gb: 800
+  timeout: 7d
+environment_variables:
+  CUDA_HOME: '/usr/local/cuda'
+  LD_LIBRARY_PATH: '$LD_LIBRARY_PATH:/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64'
+  TF_FORCE_GPU_ALLOW_GROWTH: 'true'
+parameters:
+  model: 'albert_base'
