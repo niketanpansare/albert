@@ -316,7 +316,7 @@ def model_fn_builder(albert_config, init_checkpoint, learning_rate,
             "sentence_order_accuracy": sentence_order_accuracy,
             "sentence_order_loss": sentence_order_mean_loss
         })
-        bolt.send_metrics(metrics)
+        #bolt.send_metrics(metrics)
         return metrics
 
       metric_values = [
@@ -334,7 +334,7 @@ def model_fn_builder(albert_config, init_checkpoint, learning_rate,
               eval_metrics=eval_metrics,
               scaffold_fn=scaffold_fn)
       else:
-          logging_hook = BoltLoggingTensorHook({'loss': total_loss}, every_n_iter=100)
+          #logging_hook = BoltLoggingTensorHook({'loss': total_loss}, every_n_iter=100)
           output_spec = tf.estimator.EstimatorSpec(
               mode=mode,
               loss=total_loss,
