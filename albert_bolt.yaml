@@ -13,7 +13,7 @@ resources:
   ports: ["TENSORBOARD_PORT"]
   num_gpus: 4
   num_cpus: 2
-  memory_gb: 95
+  memory_gb: 150 #95 as the RAM usage is close 80-90% and might cause swapping
   disk_gb: 800
   timeout: 7d
 environment_variables:

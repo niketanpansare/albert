@@ -23,8 +23,10 @@ import time
 from albert import modeling
 from albert import optimization
 from albert import distribution_utils
+from tensorflow.estimator import LoggingTensorHook
 from six.moves import range
 import tensorflow.compat.v1 as tf
+import turibolt as bolt
 #from tensorflow.contrib import cluster_resolver as contrib_cluster_resolver
 #from tensorflow.contrib import data as contrib_data
 #from tensorflow.contrib import tpu as contrib_tpu
@@ -134,6 +136,39 @@ flags.DEFINE_integer(
     "num_gpus", 0,
     "Use the GPU backend if this value is set to more than zero.")
 
+class BoltLoggingTensorHook(LoggingTensorHook):
+    def __init__(self,
+                 tensors,
+                 every_n_iter=None,
+                 every_n_secs=None,
+                 at_end=False):
+        try:
+            import turibolt
+            task_id = turibolt.get_current_task_id()
+            bolt_available = True
+        except:
+            bolt_available = False
+
+        def formatter(tensors):
+            tmp_dict = {}
+            for k in tensors:
+                np_array = np.asarray(tensors[k])
+                if np.isnan(np_array).any():
+                    logger.warn(str(k) + ' contains nans!')
+                tmp_dict[k] = np_array.item()
+            if bolt_available:
+                try:
+                    turibolt.send_metrics(tmp_dict)
+                except:
+                    pass
+            return ', '.join(
+                [str(k) + ':' + str(tmp_dict[k]) for k in tmp_dict])
+
+        super(BoltLoggingTensorHook, self).__init__(tensors,
+                                                    every_n_iter=every_n_iter,
+                                                    every_n_secs=every_n_secs,
+                                                    at_end=at_end,
+                                                    formatter=formatter)
 
 def model_fn_builder(albert_config, init_checkpoint, learning_rate,
                      num_train_steps, num_warmup_steps, use_tpu,
@@ -281,6 +316,7 @@ def model_fn_builder(albert_config, init_checkpoint, learning_rate,
             "sentence_order_accuracy": sentence_order_accuracy,
             "sentence_order_loss": sentence_order_mean_loss
         })
+        bolt.send_metrics(metrics)
         return metrics
 
       metric_values = [
@@ -298,9 +334,11 @@ def model_fn_builder(albert_config, init_checkpoint, learning_rate,
               eval_metrics=eval_metrics,
               scaffold_fn=scaffold_fn)
       else:
+          logging_hook = BoltLoggingTensorHook({'loss': total_loss}, every_n_iter=100)
           output_spec = tf.estimator.EstimatorSpec(
               mode=mode,
               loss=total_loss,
+              training_hooks=[logging_hook],
               eval_metric_ops=metric_fn(
                   masked_lm_example_loss, masked_lm_log_probs, masked_lm_ids,
                   masked_lm_weights, sentence_order_example_loss,
