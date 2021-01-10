@@ -64,7 +64,7 @@ def _mirrored_cross_device_ops(all_reduce_alg, num_packs):
     return None
   mirrored_all_reduce_options = {
       #"nccl": tf.contrib.distribute.NcclAllReduce,
-      "hierarchical_copy": tf.contrib.distribute.HierarchicalCopyAllReduce
+      "hierarchical_copy": tf.contrib.distribute.AllReduceCrossTowerOps #tf.contrib.distribute.HierarchicalCopyAllReduce
   }
   if all_reduce_alg not in mirrored_all_reduce_options:
     raise ValueError(
