@@ -24,9 +24,9 @@ from albert import modeling
 from albert import optimization
 from six.moves import range
 import tensorflow.compat.v1 as tf
-from tensorflow.contrib import cluster_resolver as contrib_cluster_resolver
-from tensorflow.contrib import data as contrib_data
-from tensorflow.contrib import tpu as contrib_tpu
+#from tensorflow.contrib import cluster_resolver as contrib_cluster_resolver
+#from tensorflow.contrib import data as contrib_data
+#from tensorflow.contrib import tpu as contrib_tpu
 
 flags = tf.flags
 
@@ -227,11 +227,17 @@ def model_fn_builder(albert_config, init_checkpoint, learning_rate,
           total_loss, learning_rate, num_train_steps, num_warmup_steps,
           use_tpu, optimizer, poly_power, start_warmup_step)
 
-      output_spec = contrib_tpu.TPUEstimatorSpec(
-          mode=mode,
-          loss=total_loss,
-          train_op=train_op,
-          scaffold_fn=scaffold_fn)
+      if use_tpu:
+          output_spec = contrib_tpu.TPUEstimatorSpec(
+              mode=mode,
+              loss=total_loss,
+              train_op=train_op,
+              scaffold_fn=scaffold_fn)
+      else:
+          output_spec = tf.estimator.EstimatorSpec(
+              mode=mode,
+              loss=total_loss,
+              train_op=train_op)
     elif mode == tf.estimator.ModeKeys.EVAL:
 
       def metric_fn(*args):
@@ -284,11 +290,20 @@ def model_fn_builder(albert_config, init_checkpoint, learning_rate,
 
       eval_metrics = (metric_fn, metric_values)
 
-      output_spec = contrib_tpu.TPUEstimatorSpec(
-          mode=mode,
-          loss=total_loss,
-          eval_metrics=eval_metrics,
-          scaffold_fn=scaffold_fn)
+      if use_tpu:
+          output_spec = contrib_tpu.TPUEstimatorSpec(
+              mode=mode,
+              loss=total_loss,
+              eval_metrics=eval_metrics,
+              scaffold_fn=scaffold_fn)
+      else:
+          output_spec = tf.estimator.EstimatorSpec(
+              mode=mode,
+              loss=total_loss,
+              eval_metric_ops=metric_fn(
+                  masked_lm_example_loss, masked_lm_log_probs, masked_lm_ids,
+                  masked_lm_weights, sentence_order_example_loss,
+                  sentence_order_log_probs, sentence_order_labels))
     else:
       raise ValueError("Only TRAIN and EVAL modes are supported: %s" % (mode))
 
@@ -430,7 +445,7 @@ def input_fn_builder(input_files,
       # `sloppy` mode means that the interleaving is not exact. This adds
       # even more randomness to the training pipeline.
       d = d.apply(
-          contrib_data.parallel_interleave(
+          tf.data.experimental.parallel_interleave( #contrib_data.parallel_interleave(
               tf.data.TFRecordDataset,
               sloppy=is_training,
               cycle_length=cycle_length))
