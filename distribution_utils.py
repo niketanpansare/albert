@@ -33,14 +33,14 @@ def _collective_communication(all_reduce_alg):
     all_reduce_alg: a string specifying which collective communication to pick,
       or None.
   Returns:
-    tf.distribute.experimental.CollectiveCommunication object
+    tf.contrib.distribute.experimental.CollectiveCommunication object
   Raises:
     ValueError: if `all_reduce_alg` not in [None, 'ring', 'nccl']
   """
   collective_communication_options = {
-      None: tf.distribute.experimental.CollectiveCommunication.AUTO,
-      "ring": tf.distribute.experimental.CollectiveCommunication.RING,
-      "nccl": tf.distribute.experimental.CollectiveCommunication.NCCL
+      None: tf.contrib.distribute.experimental.CollectiveCommunication.AUTO,
+      "ring": tf.contrib.distribute.experimental.CollectiveCommunication.RING,
+      "nccl": tf.contrib.distribute.experimental.CollectiveCommunication.NCCL
   }
   if all_reduce_alg not in collective_communication_options:
     raise ValueError(
@@ -56,15 +56,15 @@ def _mirrored_cross_device_ops(all_reduce_alg, num_packs):
     all_reduce_alg: a string specifying which cross device op to pick, or None.
     num_packs: an integer specifying number of packs for the cross device op.
   Returns:
-    tf.distribute.CrossDeviceOps object or None.
+    tf.contrib.distribute.CrossDeviceOps object or None.
   Raises:
     ValueError: if `all_reduce_alg` not in [None, 'nccl', 'hierarchical_copy'].
   """
   if all_reduce_alg is None:
     return None
   mirrored_all_reduce_options = {
-      "nccl": tf.distribute.NcclAllReduce,
-      "hierarchical_copy": tf.distribute.HierarchicalCopyAllReduce
+      "nccl": tf.contrib.distribute.NcclAllReduce,
+      "hierarchical_copy": tf.contrib.distribute.HierarchicalCopyAllReduce
   }
   if all_reduce_alg not in mirrored_all_reduce_options:
     raise ValueError(
@@ -93,12 +93,12 @@ def get_distribution_strategy(distribution_strategy="mirrored",
       "hierarchical_copy". For `MultiWorkerMirroredStrategy`, valid values are
       "ring" and "nccl".  If None, DistributionStrategy will choose based on
       device topology.
-    num_packs: Optional.  Sets the `num_packs` in `tf.distribute.NcclAllReduce`
-      or `tf.distribute.HierarchicalCopyAllReduce` for `MirroredStrategy`.
+    num_packs: Optional.  Sets the `num_packs` in `tf.contrib.distribute.NcclAllReduce`
+      or `tf.contrib.distribute.HierarchicalCopyAllReduce` for `MirroredStrategy`.
     tpu_address: Optional. String that represents TPU to connect to. Must not
       be None if `distribution_strategy` is set to `tpu`.
   Returns:
-    tf.distribute.DistibutionStrategy object.
+    tf.contrib.distribute.DistibutionStrategy object.
   Raises:
     ValueError: if `distribution_strategy` is 'off' or 'one_device' and
       `num_gpus` is larger than 1; or `num_gpus` is negative or if
@@ -118,31 +118,31 @@ def get_distribution_strategy(distribution_strategy="mirrored",
   if distribution_strategy == "tpu":
     # When tpu_address is an empty string, we communicate with local TPUs.
     cluster_resolver = tpu_lib.tpu_initialize(tpu_address)
-    return tf.distribute.experimental.TPUStrategy(cluster_resolver)
+    return tf.contrib.distribute.experimental.TPUStrategy(cluster_resolver)
 
   if distribution_strategy == "multi_worker_mirrored":
-    return tf.distribute.experimental.MultiWorkerMirroredStrategy(
+    return tf.contrib.distribute.experimental.MultiWorkerMirroredStrategy(
         communication=_collective_communication(all_reduce_alg))
 
   if distribution_strategy == "one_device":
     if num_gpus == 0:
-      return tf.distribute.OneDeviceStrategy("device:CPU:0")
+      return tf.contrib.distribute.OneDeviceStrategy("device:CPU:0")
     if num_gpus > 1:
       raise ValueError("`OneDeviceStrategy` can not be used for more than "
                        "one device.")
-    return tf.distribute.OneDeviceStrategy("device:GPU:0")
+    return tf.contrib.distribute.OneDeviceStrategy("device:GPU:0")
 
   if distribution_strategy == "mirrored":
     if num_gpus == 0:
       devices = ["device:CPU:0"]
     else:
       devices = ["device:GPU:%d" % i for i in range(num_gpus)]
-    return tf.distribute.MirroredStrategy(
+    return tf.contrib.distribute.MirroredStrategy(
         devices=devices,
         cross_device_ops=_mirrored_cross_device_ops(all_reduce_alg, num_packs))
 
   if distribution_strategy == "parameter_server":
-    return tf.distribute.experimental.ParameterServerStrategy()
+    return tf.contrib.distribute.ParameterServerStrategy()
 
   raise ValueError(
       "Unrecognized Distribution Strategy: %r" % distribution_strategy)
@@ -265,17 +265,17 @@ def _undo_monkey_patch_dataset_method(strategy):
 
 
 def set_up_synthetic_data():
-  _monkey_patch_dataset_method(tf.distribute.OneDeviceStrategy)
-  _monkey_patch_dataset_method(tf.distribute.MirroredStrategy)
+  _monkey_patch_dataset_method(tf.contrib.distribute.OneDeviceStrategy)
+  _monkey_patch_dataset_method(tf.contrib.distribute.MirroredStrategy)
   _monkey_patch_dataset_method(
-      tf.distribute.experimental.MultiWorkerMirroredStrategy)
+      tf.contrib.distribute.experimental.MultiWorkerMirroredStrategy)
 
 
 def undo_set_up_synthetic_data():
-  _undo_monkey_patch_dataset_method(tf.distribute.OneDeviceStrategy)
-  _undo_monkey_patch_dataset_method(tf.distribute.MirroredStrategy)
+  _undo_monkey_patch_dataset_method(tf.contrib.distribute.OneDeviceStrategy)
+  _undo_monkey_patch_dataset_method(tf.contrib.distribute.MirroredStrategy)
   _undo_monkey_patch_dataset_method(
-      tf.distribute.experimental.MultiWorkerMirroredStrategy)
+      tf.contrib.distribute.experimental.MultiWorkerMirroredStrategy)
 
 
 def configure_cluster(worker_hosts=None, task_index=-1):
