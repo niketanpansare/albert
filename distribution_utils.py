@@ -63,8 +63,8 @@ def _mirrored_cross_device_ops(all_reduce_alg, num_packs):
   if all_reduce_alg is None:
     return None
   mirrored_all_reduce_options = {
-      #"nccl": tf.contrib.distribute.NcclAllReduce,
-      "hierarchical_copy": tf.contrib.distribute.AllReduceCrossTowerOps #tf.contrib.distribute.HierarchicalCopyAllReduce
+      "nccl": tf.contrib.distribute.NcclAllReduce,
+      "hierarchical_copy": tf.contrib.distribute.HierarchicalCopyAllReduce
   }
   if all_reduce_alg not in mirrored_all_reduce_options:
     raise ValueError(
@@ -139,7 +139,8 @@ def get_distribution_strategy(distribution_strategy="mirrored",
       devices = ["device:GPU:%d" % i for i in range(num_gpus)]
     return tf.contrib.distribute.MirroredStrategy(
         devices=devices,
-        cross_device_ops=_mirrored_cross_device_ops(all_reduce_alg, num_packs))
+        cross_tower_ops=tf.contrib.distribute.AllReduceCrossTowerOps('hierarchical_copy', num_packs=num_packs))
+        #cross_device_ops=_mirrored_cross_device_ops(all_reduce_alg, num_packs))
 
   if distribution_strategy == "parameter_server":
     return tf.contrib.distribute.ParameterServerStrategy()
