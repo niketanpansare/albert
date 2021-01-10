@@ -338,7 +338,6 @@ def model_fn_builder(albert_config, init_checkpoint, learning_rate,
           output_spec = tf.estimator.EstimatorSpec(
               mode=mode,
               loss=total_loss,
-              training_hooks=[logging_hook],
               eval_metric_ops=metric_fn(
                   masked_lm_example_loss, masked_lm_log_probs, masked_lm_ids,
                   masked_lm_weights, sentence_order_example_loss,
