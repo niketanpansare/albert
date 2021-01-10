@@ -22,6 +22,7 @@ import os
 import time
 from albert import modeling
 from albert import optimization
+from albert import distribution_utils
 from six.moves import range
 import tensorflow.compat.v1 as tf
 #from tensorflow.contrib import cluster_resolver as contrib_cluster_resolver
@@ -548,7 +549,6 @@ def main(_):
           train_batch_size=FLAGS.train_batch_size,
           eval_batch_size=FLAGS.eval_batch_size)
   else:
-      import distribution_utils
       session_config = tf.ConfigProto(
           inter_op_parallelism_threads=8,
           allow_soft_placement=True)
