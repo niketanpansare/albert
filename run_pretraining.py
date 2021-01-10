@@ -537,7 +537,7 @@ def main(_):
       distribution_strategy = distribution_utils.get_distribution_strategy(
           distribution_strategy='mirrored',
           num_gpus=FLAGS.num_gpus,
-          all_reduce_alg='nccl',
+          all_reduce_alg='hierarchical_copy', #''nccl', TODO:
           num_packs=0)
 
       dist_gpu_config = tf.estimator.RunConfig(
