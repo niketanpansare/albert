@@ -22,7 +22,7 @@ import os
 import time
 from albert import modeling
 from albert import optimization
-import distribution_utils
+from albert import distribution_utils
 from six.moves import range
 #import tensorflow.compat.v1 as tf
 import tensorflow as tf
