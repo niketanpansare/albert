@@ -4,14 +4,12 @@ name: 'AMP Reco Engineering - Train Albert'
 description: 'Job for training a DNN model for Arcade'
 command: 'python3 -m bolt_train'
 tags: ['AMP', 'Recommendations', 'BERT', 'Dev']
-setup_command: 'bash setup_bolt.sh'
+setup_command: 'python3 -m pip install apple-certifi --upgrade --force-reinstall -i https://pypi.apple.com/simple' #'bash setup_bolt.sh'
 permissions:
    owners: 'niketan_pansare'
    viewers: 'amp-reco-eng'
 resources:
-  image: current-ubuntu18.04-cuda10.1
-  cluster: 'simcloud-mr2.apple.com'
-  group: 'p6:iss'
+  docker_image: docker.apple.com/htokgozoglu/yoda:latest #image: current-ubuntu18.04-cuda10.1
   ports: ["TENSORBOARD_PORT"]
   num_gpus: 4
   num_cpus: 2
