@@ -21,7 +21,8 @@ from __future__ import print_function
 
 import re
 import six
-import tensorflow.compat.v1 as tf
+#import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 # pylint: disable=g-direct-tensorflow-import
 from tensorflow.python.ops import array_ops

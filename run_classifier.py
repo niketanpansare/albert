@@ -24,7 +24,8 @@ import time
 from albert import classifier_utils
 from albert import fine_tuning_utils
 from albert import modeling
-import tensorflow.compat.v1 as tf
+#import tensorflow.compat.v1 as tf
+import tensorflow as tf
 from tensorflow.contrib import cluster_resolver as contrib_cluster_resolver
 from tensorflow.contrib import tpu as contrib_tpu
 

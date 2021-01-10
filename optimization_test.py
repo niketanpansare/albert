@@ -19,7 +19,8 @@ from __future__ import print_function
 from albert import optimization
 from six.moves import range
 from six.moves import zip
-import tensorflow.compat.v1 as tf
+#import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 
 class OptimizationTest(tf.test.TestCase):

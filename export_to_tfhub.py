@@ -21,7 +21,8 @@ import os
 from absl import app
 from absl import flags
 from albert import modeling
-import tensorflow.compat.v1 as tf
+#import tensorflow.compat.v1 as tf
+import tensorflow as tf
 import tensorflow_hub as hub
 
 flags.DEFINE_string(

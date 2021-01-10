@@ -24,7 +24,8 @@ import collections
 import unicodedata
 import six
 from six.moves import range
-import tensorflow.compat.v1 as tf
+#import tensorflow.compat.v1 as tf
+import tensorflow as tf
 import tensorflow_hub as hub
 import sentencepiece as spm
 
