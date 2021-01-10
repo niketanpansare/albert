@@ -129,6 +129,11 @@ flags.DEFINE_float(
     "for offline masking")
 
 
+flags.DEFINE_integer(
+    "num_gpus", 0,
+    "Use the GPU backend if this value is set to more than zero.")
+
+
 def model_fn_builder(albert_config, init_checkpoint, learning_rate,
                      num_train_steps, num_warmup_steps, use_tpu,
                      use_one_hot_embeddings, optimizer, poly_power,
@@ -490,18 +495,6 @@ def main(_):
     tpu_cluster_resolver = contrib_cluster_resolver.TPUClusterResolver(
         FLAGS.tpu_name, zone=FLAGS.tpu_zone, project=FLAGS.gcp_project)
 
-  is_per_host = contrib_tpu.InputPipelineConfig.PER_HOST_V2
-  run_config = contrib_tpu.RunConfig(
-      cluster=tpu_cluster_resolver,
-      master=FLAGS.master,
-      model_dir=FLAGS.output_dir,
-      save_checkpoints_steps=FLAGS.save_checkpoints_steps,
-      keep_checkpoint_max=FLAGS.keep_checkpoint_max,
-      tpu_config=contrib_tpu.TPUConfig(
-          iterations_per_loop=FLAGS.iterations_per_loop,
-          num_shards=FLAGS.num_tpu_cores,
-          per_host_input_for_training=is_per_host))
-
   model_fn = model_fn_builder(
       albert_config=albert_config,
       init_checkpoint=FLAGS.init_checkpoint,
@@ -514,14 +507,58 @@ def main(_):
       poly_power=FLAGS.poly_power,
       start_warmup_step=FLAGS.start_warmup_step)
 
-  # If TPU is not available, this will fall back to normal Estimator on CPU
-  # or GPU.
-  estimator = contrib_tpu.TPUEstimator(
-      use_tpu=FLAGS.use_tpu,
-      model_fn=model_fn,
-      config=run_config,
-      train_batch_size=FLAGS.train_batch_size,
-      eval_batch_size=FLAGS.eval_batch_size)
+  if FLAGS.use_tpu and FLAGS.num_gpus > 0:
+      raise ValueError('Cann use both TPU and gpus')
+
+  if FLAGS.use_tpu:
+      is_per_host = contrib_tpu.InputPipelineConfig.PER_HOST_V2
+      run_config = contrib_tpu.RunConfig(
+          cluster=tpu_cluster_resolver,
+          master=FLAGS.master,
+          model_dir=FLAGS.output_dir,
+          save_checkpoints_steps=FLAGS.save_checkpoints_steps,
+          keep_checkpoint_max=FLAGS.keep_checkpoint_max,
+          tpu_config=contrib_tpu.TPUConfig(
+              iterations_per_loop=FLAGS.iterations_per_loop,
+              num_shards=FLAGS.num_tpu_cores,
+              per_host_input_for_training=is_per_host))
+
+
+      # If TPU is not available, this will fall back to normal Estimator on CPU
+      # or GPU.
+      estimator = contrib_tpu.TPUEstimator(
+          use_tpu=FLAGS.use_tpu,
+          model_fn=model_fn,
+          config=run_config,
+          train_batch_size=FLAGS.train_batch_size,
+          eval_batch_size=FLAGS.eval_batch_size)
+  else:
+      import distribution_utils
+      session_config = tf.ConfigProto(
+          inter_op_parallelism_threads=8,
+          allow_soft_placement=True)
+
+      distribution_strategy = distribution_utils.get_distribution_strategy(
+          distribution_strategy='mirrored',
+          num_gpus=FLAGS.num_gpus,
+          all_reduce_alg='nccl' #'hierarchical_copy',  # ''nccl', TODO:
+          num_packs=0)
+
+      dist_gpu_config = tf.estimator.RunConfig(
+          train_distribute=distribution_strategy,
+          model_dir=FLAGS.output_dir,
+          session_config=session_config,
+          keep_checkpoint_max=5,
+          save_checkpoints_steps=FLAGS.save_checkpoints_steps,
+      )
+
+      hparams = {"batch_size": FLAGS.train_batch_size}
+      estimator = tf.estimator.Estimator(
+          model_fn=model_fn,
+          config=dist_gpu_config,
+          model_dir=FLAGS.output_dir,
+          params=hparams,
+      )
 
   if FLAGS.do_train:
     tf.logging.info("***** Running training *****")
